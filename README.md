@@ -6,7 +6,7 @@ Angicart is an efficient software for vascular network segmentation and analysis
 
 The original algorithm for segmentation is described in:
 
-> Newberry MG, Ennis DB, Savage VM (2015) Testing Foundations of Biological Scaling Theory Using Automated Measurements of Vascular Networks. *PLoS Comput Biol* 11(8): e1004455. doi:10.1371/journal.pcbi.1004455
+> Newberry MG, Ennis DB, Savage VM (2015) Testing Foundations of Biological Scaling Theory Using Automated Measurements of Vascular Networks. *PLoS Comput Biol* 11(8): e1004455. https://doi.org/10.1371/journal.pcbi.1004455
 
 Applications to PET–CT scan data from cancer patients are described in:
 
