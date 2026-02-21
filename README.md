@@ -22,7 +22,7 @@ The method for quantifying curvature and tortuosity is described in:
 
 ### Windows
 
-A prebuilt x64 executable will be in releases.
+A prebuilt x64 executable will be in releases: https://github.com/kaiakamatsu/AngicartCpp/releases/tag/v1.0.0
 
 **Build from source (Visual Studio, not VS Code):**
 
