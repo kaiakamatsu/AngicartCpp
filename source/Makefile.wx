@@ -1,0 +1,17 @@
+
+CXX = $(shell wx-config --cxx)
+
+all: minSurfTests
+
+# only need -pthread for unix (not mac)
+minSurfTests: minSurfTests.o lodepng.o minSurfTests.cpp lodepng.h lodepng.cpp
+	$(CXX) -std=c++11 -o minSurfTests minSurfTests.o lodepng.o `wx-config --libs`
+
+minSurfTests.o: minSurfTests.cpp lodepng.o lodepng.h lodepng.cpp
+	$(CXX) -std=c++11 -c `wx-config --cxxflags` -I . minSurfTests.cpp
+
+lodepng.o: lodepng.h lodepng.cpp
+	$(CXX) -std=c++11 -c -I . lodepng.cpp
+
+clean:
+	rm -f *.o minSurfTests

@@ -1,0 +1,13 @@
+
+ Setting srand(1513060187).
+
+ Setting srand(112358).
+
+ B.totalSize() = 16252928
+ B.totalTrue() = 688446
+
+Finding largest connected components...
+
+Finding outside...
+
+Filling gaps...

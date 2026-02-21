@@ -1,0 +1,15 @@
+
+all: minSurfTests
+
+# only need -pthread for unix (not mac)
+minSurfTests: minSurfTests.o lodepng.o minSurfTests.cpp lodepng.h lodepng.cpp
+	g++ -Wall -std=c++11 -pthread -o minSurfTests minSurfTests.o lodepng.o
+
+minSurfTests.o: minSurfTests.cpp lodepng.o lodepng.h lodepng.cpp
+	g++ -Wall -std=c++11 -c -I . minSurfTests.cpp
+
+lodepng.o: lodepng.h lodepng.cpp
+	g++ -Wall -std=c++11 -c -I . lodepng.cpp
+
+clean:
+	rm -f *.o minSurfTests
