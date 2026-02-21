@@ -1,0 +1,171 @@
+This guide may not yet be a comprehensive manual, but it may be helpful for someone who is unfamiliar with the ideas behind the algorithms or how to compile c++ programs with external dependencies.
+The program is written in c++11 and utilizes wxWidgets and OpenGL to create a cross-platform interactive visualization window.
+For those uncomfortable with compiling a project with these libraries, try one of these installation and compilation methods:
+
+Mac OSX hints:
+	update operating system (tested on 10.11.4 El Capitan)
+	install/update Xcode (tested on 7.3)
+	install the Xcode command line development tools: code-select --install
+	install using Homebrew: brew install wxmac
+	open provided Xcode project file (Apple-R to build and run)
+	[[[[not necessary: define WXROOT, e.g. type open -a TextEdit ~/.bash_profile into a terminal add the line
+			export WXROOT="path-to-wxWidgets"
+		at the bottom, where you must replace path-to-wxWidgets with the appropriate path.
+	in Xcode, create new Command Line Tool;
+	add the source files to the project;
+	not necessary: go to Build Settings for the project and for both Debug and Release do:
+		put the outputs of commands:	|	into Xcode project properties:
+			wx-config --libs			|		Other Linker Flags (in Linking)
+			wx-config --gl-libs			|		also in Other Linker Flags (in Linking)
+			wx-config --cxxflags		|		Other C++ Flags (down in Apple LLVM X.Y - Custom Compiler Flags)
+	also, add _WCHAR_H_CPLUSPLUS_98_CONFORMANCE_  to Other C++ Flags.]]]]
+
+
+Windows hints:
+	update operating system (tested on Windows 7)
+	update Visual Studio (tested on VS Express 2013)
+	install wxWidgets (follow instructions to build libraries on the webpage for wxWidgets)
+	copy extra dynamic libraries to Release or Debug directory: {wxbase31u_vc_custom.dll, wxmsw31u_core_vc_custom.dll, wxmsw31u_gl_vc_custom.dll} for release, {wxbase31ud_vc_custom.dll, wxmsw31ud_core_vc_custom.dll, wxmsw31ud_gl_vc_custom.dll} for debug
+	add libraries and flags...
+	F5 to build and run
+
+
+To run without the wxWidgets interface, change #define TRY_WX 1 to #define TRY_WX 0 on line 6 of wxMinSurfTests.h.
+
+
+The default method to run (if running the wxWidgets window or if no arguments are given when the program is called) is sphereCoarsenTest(), which tries to use a presupplied image set and the appropriate parameters for an analysis.
+The method sphereCoarsenTest() calls analyzeVascularStructure(...) after loading the appropriate data.
+The method analyzeVascularStructure(...) can operate on another data set by changing the default in the c++ code or by feeding the program the appropriate arguments from the command line <more options to be implemented in the future>.
+For specifying another data set to analyze, nine pieces of information are needed.
+In order, these pieces are:
+	string image_directory
+	int image_start_inclusive
+	int image_end_inclusive
+	string output_filename_base
+	double voxel_dimension_x
+	double voxel_dimension_y
+	double voxel_dimension_z
+	string length_unit_name
+	double normalized_intensity_threshold
+
+	
+We begin by reading in the set of PNG images over the range from the directory, specified by the user.
+The images are assembled and a BinaryVolume B is constructed, where the values of the bitset are true in locations that correspond to vasculature.
+The points of B are initialized for the visualization and a map of points pm is created so that the RGBA color of each point can be accessed quickly.
+
+
+As the first step in analysis, B is reduced to its largest connected components (say, the 10 largest) and the smallest disconnected components are removed.
+To be safe, the number of largest connected components to keep may be chosen such that there is at least one component that has no backbone.
+The visualization is then updated to this set of points.
+
+
+The first step in segmentation is to define a useful set of spheres that provide a coarse map of the vascular system.
+In the current implementation, the spheres are defined in the space of cubic voxels because only the connected components and fraction of vascular surface area are important, but the physical dimensions could also be used if artifacts from voxel asymmetries become common.
+One sphere that includes all data or one sphere for every point in the data are not useful sets, while one that roughly parses the structure into segments is a useful set.
+Such a set can be constructed by serially creating disjoint spheres that grow to the size of the vascular segment that they occupy.
+
+
+The general algorithm for determining the quality of a sphere is as follows:
+Choose a random vascular point in B that has not yet been a seed for a potential sphere.
+Grow the sphere until the fraction of vascular voxels in the expanding frontier (i.e., within a given interval of distance from the sphere's seed) falls below some threshold.
+A reasonable threshold could be 0.16, because only one of the six face-sharing need be a vessel to grow larger.
+
+
+If the sphere does not find sufficient vascular voxels within a frontier surface slice, a valid, disjoint sphere is returned.
+However, if at any time the frontier includes a point already belonging to another sphere, then the seed that currently being explored is labeled invalid.
+For any such sphere, the seed is abandoned as a viable seed.
+
+
+For valid disjoint spheres, a repositioning of the center may occur.
+This is useful if the seed happens to fall on the outside of a vessel (which will be common, given the likely dominance of non-vascular voxels over vascular voxels).
+If the seed of the sphere does not fall at the center of mass (for equimassive voxels) of the vascular part that the sphere includes, then the center of mass is taken as the seed for a sphere and the old seed is abandoned.
+When the seed does not move or the sphere's radius does not increase, then the seed is accepted for a valid sphere.
+
+
+We search for valid spheres until a specified number of seeds fail consecutively.
+For more consecutive failures, the structure will be better segmented, however this will come at a higher cost in resources spent waiting to reach this threshold.
+This process could be repeated for a higher critical fraction for vasculature in order to obtain more spheres, but may not be necessary.
+
+
+Once the spheres are determined, the remaining vascular is segmented into single connected components between spheres, keeping track of which spheres are adjacent to each segment.
+A map for which connections a sphere is adjacent to is also created.
+This is convenient for the next step of removing obviously misleading spheres.
+The vascular structure is now segmented into disjoint intrasphere spaces (within the particular sphere's radius of each sphere seed), and intersphere spaces (single connected components that connect the spheres)
+
+
+Some spheres do not completely fill a vessel, which may lead to the identification of a false tip.
+During each pass of this removal algorithm, every sphere and connection between spheres is visited.
+For spheres, we identify false times by finding those that have only a single connection and a single connected component interface between the intrasphere and intersphere vascular spaces.
+For connections between spheres, we remove any intersphere space that includes fewer than two spheres.
+
+
+With well-defined intra- and intersphere spaces, we define the critical voxels as the center of mass of each of the single connected components defined by the interfaces between these two spaces.
+Each critical voxel is associated with the connection that defines its interface, which is paired with  the appropriate spheres when finding the raw backbones.
+The critical voxels define the "tips" for the skeletonization of each sphere and connection.
+The skeletonization procedure utilizes erosion to determine the center lines that are farthest from the outside of the vessel (similar to OCaml Angicart, although the outside here is defined by the largest connected non-vascular component).
+
+
+The raw backbones are organized (put in a sequential order, walking along the backbone) and stitched together based on the joining critical vertebrae so that branchpoints have at least three segments.
+This process is first performed within each intrasphere and intersphere component, and then across these components.
+Each distinct segment in the vascular now has its own backbone (a vector of position indices), the collection of which is stored in a vector (a vector<vector<unsigned int> >).
+Empty backbones are removed and the structure is condensed.
+
+
+Once the structure has been segmented into organized backbones, the tips are revisited in order to ensure that their backbone extends their full length.
+This is necessary because some segments may have only a single large sphere, so there is no interface near a tip to create a critical voxel.
+By first coarsening the structure, the algorithm is less likely to identify false tips and can treat vessels over varying orders of magnitude in size and imaging noise.
+
+
+To extend tips, we must first identify the meat that belongs to the tip, i.e., the vessel voxels that are nearest through the vascular structure to the currently defined backbone and not to another segment's backbone.
+Identifying the meat of any target segment requires identifying the appropriate neighborhood of backbones that are adjacent to the target backbone.
+The immediately adjacent backbones may be very short, and by chance the target backbone may follow a path that causes the target backbone to contain voxels that are closer to the majority of the structure.
+Such hernial instances can lead to large numbers of voxels erroneously associated with the target backbone.
+
+
+To avoid this case, it reasons (and is corroborated by applications) to be sufficient to extend the neighborhood of adjacent segments until the length of all paths in the adjacent neighborhood is at least twice as long as the target backbone.
+In some cases the adjacent backbones can extend far beyond the distance necessary to close off the target segment's meat, but it is critical that the volume is adequately bounded.
+With an adequately defined neighborhood of backbones, frontiers from each backbone that determine the shortest paths from points in the volume to a backbone expand until the meat of the target segment is fully defined.
+This same process can be used to identify the meat for any segment (even non-tips) for further analysis.
+
+
+Returning to the idea of extending tips, once we know the meet for a segment, we identify the voxel of the target backbone that is associated with the branch point and find the farthest point in the meat from this voxel
+This new critical point is then used in the erosion algorithm, along with the tip of the original target backbone that is not associated with the branch point.
+We then stitch the extension onto the tip.
+Applied over all tips, the backbones now fill the vascular structure.
+
+
+This method of finding tips is more robust than a global search for points that are positioned at maxima from a reference point.
+The fact that we can identify a tip means that it has significant structure that separates its segment from the rest of the vascular structure.
+Further analysis of the meat of each segment can be done locally (it does not require the entire set of data to be analyzed at once, which in some cases may not fit into memory) in order to refine whether any tips have been missed or erroneously identified.
+With each backbone corresponding to a single segment, we segregate the set of backbones into their connected components and store the resulting structure in the global variables for access from the visualization.
+
+
+One can define any point in the volume through the interactive visualization.
+Dragging the cursor or scrolling with the mouse wheel changes the position of of the camera by rotations or zooming, respectively.
+Holding shift during these operations changes the position of the central point of focus so that the structure can be rotated around any point within the volume.
+
+
+By clicking (i.e., depressing and releasing the left mouse button at the same position without dragging), we can define a line that extends from the camera through the location of the click.
+By rotating the view slightly, this line becomes more apparent.
+Clicking again defines another line, which in conjunction with the first line defines a point by the point of nearest approach.
+
+
+In this way, we can select any point in the volume by clicking on it twice from two different perspectives.
+Currently, the nearest backbone to this point is found and the attributes of the segment displayed in the window status.
+This process could (through a future implementation) be used to erase segments or define a critical voxel for further skeletonization through the already available local erosion algorithm.
+
+
+We output a summary of a few segment properties and the networks structure to a file tab separated values.
+One output format simply includes the properties of a segment and its adjacent segments
+Another output format chooses a root segment for each connected component and reports the structure as a tree.
+This format may yield segments with only one child because a loop is present and may not be the same parcellation of the loop as in OCaml Angicart.
+
+
+These segmentation, skeletonization and analyses algorithms are a reliable way to automatically identify segments in a vascular network and their properties given a potentially noisy image set and reticulated network.
+However, this treatment is still susceptible to some missed or extraneous tips or loops, especially when the size of the local structures are comparable to that of vessel diameter.
+
+
+Labels can be hidden or toggled in size by hitting l (i.e., the key for the letter ell (L)).
+
+
+future directions: speed/efficiency (existing and new methods); update deprecated methods for OpenGL; interface interaction (and user error), including specifying new data sets; still a few false or missed tips: has problems when holes or segment lengths are comparable to diameter; more elaborate data type for BinaryVolume and Lumens for larger sets (greater than the the maximum size for vector<bool>, which should be over 1000 on each side on most systems); match tips that are close if middle of segment is missing; ties in distance from outside may lead to curvy backbones in flat segments; highlight any suspicious segments; add info (like adjacent backbones) to selectedString(); sometimes not all of blue is reset: maybe because method is called again before previous call has been processed by OpenGL; over the summer: comparison with OCaml Angicart; 

@@ -1,0 +1,20 @@
+# Visual Studio
+.vs/
+*.VC.db
+*.VC.opendb
+
+# Build folders
+Debug/
+Release/
+x64/
+x86/
+
+# Executables
+*.exe
+*.obj
+*.pdb
+*.ilk
+
+# CMake (if ever used)
+CMakeFiles/
+CMakeCache.txt

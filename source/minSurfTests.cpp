@@ -2713,11 +2713,12 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 
 
 	// Per-backbone .dat: name (same as TSV), vertebra index, x, y, z, r_solid, r_surf. One block per backbone, blank line between.
+	// TODO: debug this. the labels for segments don't look right. 
 	ofstream voxelOut(outputTSVfnBase + ".dat");
 	for(unsigned int connectedComponent(0); connectedComponent < segregatedBackbones.size(); connectedComponent++){
 		for(unsigned int backboneIndex(0); backboneIndex < segregatedBackbones[connectedComponent].size(); backboneIndex++){
-			voxelOut << "# " << backboneNumberName(connectedComponent, backboneIndex, (unsigned int)segregatedBackbones.size())
-				<< "\tidx\tx\ty\tz\tr_solid\tr_surf" << endl;
+			voxelOut << "# " << backboneNumberName(connectedComponent, backboneIndex, (unsigned int)segregatedBackbones.size()) << endl;
+			voxelOut << "idx\tx\ty\tz\tr_solid\tr_surf" << endl;
 			const vector<double> &radSolid = aveRadSolidByVertebraGlobal[connectedComponent][backboneIndex];
 			const vector<double> &radSurf = aveRadSurfByVertebraGlobal[connectedComponent][backboneIndex];
 			for(unsigned int vertebra(0); vertebra < segregatedBackbones[connectedComponent][backboneIndex].size(); vertebra++){
@@ -2743,7 +2744,7 @@ void sphereCoarsenTest(){
 //#if defined(__WXMSW__) || defined(__WINDOWS__)
 //	string pathToImages("."); // Windows
 //#elif defined(__WXOSX__)
-	string pathToImages("C:/Users/kaiak/OneDrive/Documents/UCLA/SAVAGELAB/AngicartC++/AngicartCPlusPlus_171211/sample_data");
+	string pathToImages("C:/Users/kaiak/OneDrive/Documents/UCLA/SAVAGELAB/AngicartC++/AngicartCpp/sample_data");
 //#else
 //	string pathToImages(".");
 //#endif
@@ -2754,7 +2755,7 @@ void sphereCoarsenTest(){
     //string imageDir(pathToImages); int imStart(0), imEnd(95); double voxdims[] = {195.3125, 195.3125, 200}; thresh = 0.85; string lengthUnit("\u03BCm");
 	//string imageDir(pathToImages + "/Lung Images (Processed) - Study 2310 L2"); int imStart(1), imEnd(337); double voxdims[] = {1.0, 1.0, 1.0}; string lengthUnit("\u03BCm"); // um units not to scale
 	
-	string outputTSVfnBase("C:/Users/kaiak/OneDrive/Documents/UCLA/SAVAGELAB/AngicartC++/RESULTS/FITC-MCA0_N12_PI001_s1");
+	string outputTSVfnBase("C:/Users/kaiak/OneDrive/Documents/UCLA/SAVAGELAB/AngicartC++/AngicartCpp/sample_outputs/FITC-MCA0_N12_PI001_s1");
 	
 	analyzeVascularStructure(imageDir, imStart, imEnd, outputTSVfnBase, voxdims, lengthUnit, thresh, critFrac);
 }
