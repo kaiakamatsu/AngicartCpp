@@ -24,7 +24,7 @@ The method for quantifying curvature and tortuosity is described in:
 
 ### Windows
 
-A prebuilt x64 executable will be in releases: https://github.com/kaiakamatsu/AngicartCpp/releases/tag/v1.0.0
+A prebuilt x64 executable can be found in releases: https://github.com/kaiakamatsu/AngicartCpp/releases/tag/v1.0.0windowsmac
 
 **Build from source (Visual Studio, not VS Code):**
 
@@ -37,7 +37,7 @@ A prebuilt x64 executable will be in releases: https://github.com/kaiakamatsu/An
 
 ### macOS
 
-A macOS executable will be added soon to releases.
+A prebuilt macOS executable can be found in releases: https://github.com/kaiakamatsu/AngicartCpp/releases/tag/v1.0.0windowsmac
 
 **Build from source (Xcode):**
 
@@ -127,13 +127,15 @@ Pipeline: intensity threshold → binary volume → sphere coarsening → adjace
 
 ## Contributors 
 
-- Dr. Van Savage (vsavage@g.ucla.edu)
+This repository is currently being maintained by Kai Akamatsu (kakamatsu@g.ucla.edu) and Dr. Van Savage (vsavage@g.ucla.edu).
+
+- Dr. Van Savage
 - Jocelyn J. Shen
 - Mitchell Newberry
 - Dr. David Hunt
 - Dr. Alex Brummer
 - Anderson Ju
-- Kai Akamatsu (kakamatsu@g.ucla.edu)
+- Kai Akamatsu
 
 Our software is tested across multiple devices thanks to talented undergraduate researchers:
 
