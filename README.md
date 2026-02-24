@@ -20,7 +20,7 @@ The method for quantifying curvature and tortuosity is described in:
 
 ## Quick installation
 
-> Note that the source code includes an optional GUI build using wxWidgets. For our installation instructions and executable files, we exclude the GUI for faster processing. If you want the GUI, you would have to install wxWidgets, set `TRY_WX` to 1 in the first line of `source/minSurfTests.cpp` and rebuild. 
+> Note that the source code includes an optional GUI build using wxWidgets. For our installation instructions and executable files, we exclude the GUI for faster processing. If you want the GUI, you would have to (1) install wxWidgets, (2) set `TRY_WX` to 1 in the first line of `source/minSurfTests.cpp` and (3) rebuild. 
 
 ### Windows
 
@@ -46,6 +46,8 @@ A macOS executable will be added soon to releases.
    xcode-select --install
    ```
 2. Open the folder on xcode. You are now ready to build and run from xcode.
+
+> We noticed that on some macOS devices, users encounter privacy/security warnings when trying to run the executable file. Please see `other_resources/Angicart Notes for MacOS Users.pdf` for a simple fix.
 
 ---
 
