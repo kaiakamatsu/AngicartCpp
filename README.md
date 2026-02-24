@@ -102,15 +102,15 @@ Pipeline: intensity threshold → binary volume → sphere coarsening → adjace
 - Keep the largest connected components; fill interior holes.
 
 **2. Sphere coarsening** (`sphereCoarsen`, `critFrac` ≈ 0.16)
-- Build disjoint spheres that roughly cover the vasculature. Spheres are grown in voxel space (physical dimensions used for anisotropic voxels).
+- Build disjoint spheres that roughly cover the vasculature. Spheres are grown in voxel space (not physical dimensions).
 - For each candidate seed: grow a sphere while the fraction of vascular voxels in the expanding shell stays above `critFrac`. Stop if the shell becomes too non-vascular.
 - If the growing sphere hits a voxel already in another sphere, reject the seed; otherwise the sphere is valid.
 - Valid sphere centers may be repositioned to the center of mass of their vascular region until the center and radius stabilize.
-- Continue until a specified number of consecutive candidate seeds fail (with optional re-segmentation).
+- Continue until a specified number of consecutive candidate seeds fail.
 - Once spheres are determined, adjacency is computed: which intersphere regions connect which intrasphere (sphere) seeds.
 
 **3. Connectivity and false-tip removal**
-- **Intrasphere space:** voxels within each sphere's radius. **Intersphere space:** voxels in the complement that form singly connected components between spheres.
+- **Intrasphere space:** voxels within each sphere's radius. **Intersphere space:** voxels in the complement that form connections between spheres.
 - Remove false tips: drop spheres with only one connection and a singly connected intersphere component; drop any intersphere region touching fewer than two spheres (don't worry, tips will be extended later)
 
 **4. Critical vertebrae and raw backbones**
@@ -119,10 +119,10 @@ Pipeline: intensity threshold → binary volume → sphere coarsening → adjace
 
 **5. Segmentation and tip extension**
 - Order and stitch raw backbones using critical vertebrae; split at branch points so each segment has its own backbone. Remove empty backbones.
-- Assign vessel voxels to the nearest backbone (meat per segment). For tip segments, extend the backbone into its meat (erosion from current tip toward farthest voxel in the segment). Locally unsnarl; compute per-segment volume and average radius (and per-vertebra radius).
+- Assign vessel voxels to the nearest backbone (meat per segment). For tip segments, extend the backbone into its meat (erosion from current tip toward farthest voxel in the segment). Compute per-segment volume and average radius (and per-centerline voxel radius).
 
 **6. Output**
-- Backbones are segregated by connected component (branch-point connectivity). Results are written to the TSV, rooted TSV, and `.dat` files; the same structure is stored in globals for visualization.
+- Backbones are segregated by connected components. Results are written to the TSV, rooted TSV, and `.dat` files.
 
 
 ## Contributors 
@@ -135,4 +135,10 @@ Pipeline: intensity threshold → binary volume → sphere coarsening → adjace
 - Anderson Ju
 - Kai Akamatsu (kakamatsu@g.ucla.edu)
 
+Our software is tested across multiple devices thanks to talented undergraduate researchers:
+
+- Kaili Tam
+- David Zhang
+- Charissa Mak
+- Josh Mehdian
 
