@@ -93,6 +93,8 @@ All outputs use the path given as `output_base` with the following suffixes:
 | `output_base.dat` | Per-backbone tables: for each segment, vertebra index, voxel coordinates (x, y, z), and per-vertebra radii (r_solid, r_surf). Blocks separated by blank lines; each block has a header with the segment name (same as in the TSV). |
 | `output_base_vessels.png` | Sanity-check visualization of the binary vessel volume before backbone extraction. |
 
+Each segment is labeled (name column) such that the index of the backbone within its connected component appears before the decimal point, and the connected component label appears after the  decimal point.
+
 ## Algorithm details
 
 Pipeline: intensity threshold → binary volume → sphere coarsening → adjacency and false-tip removal → critical vertebrae → backbone erosion → segmentation and tip extension → segregation by connected component.
