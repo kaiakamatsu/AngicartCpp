@@ -89,9 +89,10 @@ All outputs use the path given as `output_base` with the following suffixes:
 | Output file | Description |
 |-------------|-------------|
 | `output_base.tsv` | Summary table per backbone: name, volume, length, radius from volume/length, observed mean radius per vessel, number of adjacent segments, and adjacency list. |
-| `output_base_withRoots.tsv` | Same as above but with a rooted tree: each segment has a parent and children instead of a flat adjacency list. |
-| `output_base.dat` | Per-backbone tables: for each segment, vertebra index, voxel coordinates (x, y, z), and per-vertebra radii (r_solid, r_surf). Blocks separated by blank lines; each block has a header with the segment name (same as in the TSV). |
+| `output_base_withRoots.tsv` | Same as above but with a rooted tree: each segment has a parent and children instead of a flat adjacency list. The root vessel of each connected component is identified by finding the tip with the largest average radius (the root vessel is the row with no parent vessel). |
+| `output_base.dat` | Per-backbone tables: for each segment, vertebra index, voxel coordinates (x, y, z), and per-vertebra radii (r_solid, r_surf). Blocks separated by blank lines; each block has a header with the segment name (same as in the TSV). These are x y z coordinates in the 3D array, NOT physical space |
 | `output_base_vessels.png` | Sanity-check visualization of the binary vessel volume before backbone extraction. |
+| `output_base_sphere_radii.tsv` | A column of sphere radii: these are the radius of the spheres utilizes in the sphere coarsening step. The runtime is often long when there are a few large spheres. Adjusting the critFrac parameter may help the software run faster. |
 
 Each segment is labeled (name column) such that the index of the backbone within its connected component appears before the decimal point, and the connected component label appears after the  decimal point.
 
@@ -135,7 +136,7 @@ This repository is currently being maintained by Kai Akamatsu (kakamatsu@g.ucla.
 - Jocelyn J. Shen
 - Mitchell Newberry
 - Dr. David Hunt
-- Dr. Alex Brummer
+- Dr. Alexander Brummer
 - Anderson Ju
 - Kai Akamatsu
 

@@ -1402,7 +1402,6 @@ vector<Backbone<> > segmentBackbones(const BinaryVolume &B, map<voxelType, Backb
 		}
 		
 		// explore segment backbone starting from a tip (unorganizedBackbone[tipIndex])
-		// note, these comments are overkill but the data structure is important to understand although a bit confusing. 
 		vector<voxelType> f(1, unorganizedBackbone[tipIndex]), bi(1, 0); // f is the frontier, bi is the segment index
 		individualOrganizedBackbones[it->first]; // initialize the organized backbone for this seed
 		map<voxelType, vector<Backbone<> > >::iterator indOrgBackboneIt(individualOrganizedBackbones.find(it->first)); // get the iterator for (seed, backbone) pair for this seed
@@ -1932,12 +1931,12 @@ string toStringSubtreeWithParent(double voxelVolume, unsigned long parent, unsig
                                  const vector<vector<branchType> > &branchpoints,
                                  const vector<double> &volumes, const vector<double> &aveRad){
     vector<branchType> adj;
-    for(unsigned long k(0); k < branchpoints.size(); k++){
+    for(unsigned long k(0); k < branchpoints.size(); k++){ // for each segment, get all adjacent segments
         if(isIn(j, branchpoints[k]))
             pushUniqueSet(branchpoints[k], adj);
     }
     for(unsigned long k(0); k < exclude.size(); k++)
-        removeFrom(exclude[k], adj);
+        removeFrom(exclude[k], adj); // remove the parent segment (visited segment) from the list of adjacent segments
     stringstream strstr;
     double vol(voxelVolume*volumes[j]),
     len(backbones[j].length(voxdimsGlobal, voldimsGlobal));
@@ -1947,7 +1946,7 @@ string toStringSubtreeWithParent(double voxelVolume, unsigned long parent, unsig
     if(parent < backbones.size())
         strstr << "\t" << backboneNumberName(i, parent, numComponents);
     else
-        strstr << "\tN/A";
+        strstr << "\tN/A"; // if there is no parent (roots will have no parent. parent argument is set to backbones.size() when this function is called with j as the index of the root in the current connected component.)
     strstr << "\t" << adj.size();
     for(unsigned long k(0); k < adj.size(); k++){
         strstr << "\t" << backboneNumberName(i, adj[k], numComponents);
@@ -1956,6 +1955,7 @@ string toStringSubtreeWithParent(double voxelVolume, unsigned long parent, unsig
     strstr << endl;
     for(unsigned long k(0); k < adj.size(); k++) // add child strings
         strstr << toStringSubtreeWithParent(voxelVolume, j, i, numComponents, adj[k], exclude, backbones, branchpoints, volumes, aveRad);
+		// this is like a depth-first search, but it avoids cycles by removing the visited segments
     return strstr.str();
 }
 
@@ -1982,7 +1982,7 @@ void writeTSVwithRoots(string outputTSVwithRootsFn, string lengthUnits, const ve
     << "\t <r>_vl(" << lengthUnits << ")\t <r>_obs(" << lengthUnits <<")"
     << "\t par\t num_child\t children..."
     << endl;
-    for(unsigned long i(0); i < backbones.size(); i++){
+    for(unsigned long i(0); i < backbones.size(); i++){ // for each connected component
         vector<voxelType> exclude(1, roots[i]);
         outFile << toStringSubtreeWithParent(voxelVolume, (unsigned int)backbones[i].size(), i, backbones.size(), roots[i], exclude, backbones[i], branchpoints[i], volumes[i], aveRad[i]);
     }
@@ -2042,10 +2042,10 @@ void writeTSV(string outputTSVfn, string lengthUnits,
  */
 voxelType assignRoot(const vector<vector<branchType> > &branchpoints, const vector<double> &aveRad){
 	double maxRad(0.0);
-	for(unsigned long i(0); i < aveRad.size(); i++){
+	for(unsigned long i(0); i < aveRad.size(); i++){ // for each segment in the connected component
 		unsigned int branchpointCount(0); // to keep track of the number of branchpoints that this segment is included in
-		for(unsigned int j(0); j < branchpoints.size(); j++){
-			if(isIn(i, branchpoints[j]))
+		for(unsigned int j(0); j < branchpoints.size(); j++){ // for each branchpoint, each branchpoint is a vector of indices in `backbones` that are adjacent
+			if(isIn(i, branchpoints[j])) // if the segment is included in the branchpoint
 				branchpointCount++;
 		}
 		if(maxRad < aveRad[i] && branchpointCount < 2) // a root must be a tip with no more than one associated brach point
@@ -2053,7 +2053,7 @@ voxelType assignRoot(const vector<vector<branchType> > &branchpoints, const vect
 	}
 	for(unsigned int i(0); i < aveRad.size(); i++){
 		if(aveRad[i] == maxRad)
-			return i;
+			return i; // return the segment with the largest average radius that is a tip. 
 	}
 	return (voxelType)aveRad.size();
 }
@@ -2067,7 +2067,7 @@ voxelType assignRoot(const vector<vector<branchType> > &branchpoints, const vect
  */
 vector<voxelType> assignRoots(const vector<vector<vector<branchType> > > &branchpoints, const vector<vector<double> > &aveRad){
 	vector<voxelType> roots;
-	for(unsigned int i(0); i < aveRad.size(); i++)
+	for(unsigned int i(0); i < aveRad.size(); i++) // for each connected component
 		roots.push_back(assignRoot(branchpoints[i], aveRad[i]));
 	return roots;
 }
@@ -2528,21 +2528,39 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 	cout << endl << rv.size() << " spheres for critFrac = " << critFrac << endl;
 	
 	// Sanity check: sphere volume vs vessel volume (dispersion check; radius in physical units)
-	// a properly functioning sphereCoarsen should result in a sphere volume that covers at least most of the vessel volume. 
+	// a properly functioning sphereCoarsen should result in a sphere volume that covers at least most of the vessel volume. Note that spheres are nonoverlapping
+	// also print max, min, average, and standard deviation of the sphere radii to understand the distribution of sphere radii. Save the sphere radii to an output file too. 
 	{
 		double voxVol(voxdimsGlobal[0] * voxdimsGlobal[1] * voxdimsGlobal[2]);
 		double vesselVol(B.totalTrue() * voxVol);
 		double totalSphereVol(0.0);
 		const double fourThirdsPi(4.0 / 3.0 * acos(-1.0));
+		double sum_r(0.0), sq_sum_r(0.0), max_r(0.0), min_r(0.0);
+		vector<double> sphereRadii;
 		for(map<voxelType, double>::const_iterator it(rv.begin()); it != rv.end(); it++){
 			double r(it->second);
 			totalSphereVol += fourThirdsPi * r * r * r;
+			sum_r += r;
+			sq_sum_r += r * r;
+			if(r > max_r) max_r = r;
+			if(r < min_r) min_r = r;
+			sphereRadii.push_back(r);
 		}
 		double ratio((vesselVol > 0.0) ? (totalSphereVol / vesselVol) : 0.0);
 		cout << "[sanity check] sphere volume / vessel volume (should be > 0.8) = " << ratio << endl;
+		cout << "Max sphere radius = " << max_r << endl;
+		cout << "Min sphere radius = " << min_r << endl;
+		double mean_r = sum_r / sphereRadii.size();
+		cout << "Average sphere radius = " << mean_r << endl;
+		// Var[X] = E[X^2] - E[X]^2
+		cout << "Standard deviation of sphere radii = " << std::sqrt(sq_sum_r / sphereRadii.size() - mean_r * mean_r) << endl;
+		ofstream sphereRadiiFile(outputTSVfnBase + "_sphere_radii.tsv");
+		sphereRadiiFile << "sphere_radius" << endl;
+		for(double r : sphereRadii)
+			sphereRadiiFile << r << endl;
+		sphereRadiiFile.close();
 	}
 	
-	// WARNING this is where my output starts to diverse from Kailis code. 
 	// finding adjacent sphere
 	generalStatusUpdate("Coarsened (" + makeString(rv.size()) + " points).  Finding adjacent spheres...");
 	// uB at this point contains true where voxels are unvisited during the sphere coarsening. i.e. they are not in a sphere. 
@@ -2602,6 +2620,7 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 	vector<vector<branchType> > branchpoints;
 	vector<Backbone<> > backbones(segmentBackbones(B, rawBackbones, critVert, branchpoints));
 	// `branchpoints` (indices in `backbones` that are adjacent) edited in segmentBackbones function
+	// Segments, organizes, and produces connectivity information from raw sets of voxels that make up backbones.  Segmentation involves identifying branching points and the connections between branching points.
 	
 	generalStatusUpdate("Segmented " + makeString(backbones.size()) + " backbone" + makePluralSuffix(backbones.size()) + " with "
 		+ makeString(branchpoints.size()) + " branch point" + makePluralSuffix(branchpoints.size()) + " (before segregation).");
@@ -2616,7 +2635,7 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 		segregatedAveRadSolid,
 		segregatedAveRadSurf;
 	vector<vector<vector<double> > > segregatedAveRadSolidByVertebra, segregatedAveRadSurfByVertebra; // segregates the per-vertebra radius vectors for each backbone into connected components. 
-	vector<vector<vector<branchType> > > segregatedBranchpoints;
+	vector<vector<vector<branchType> > > segregatedBranchpoints; // segregates branchpoints by connected components (branchpoints indicate for each segment which backbones indices are adjacent).
 
 	analyzeMeatAfterExtendingTips(B, backbones, branchpoints, volumes, aveRadSolid, aveRadSurf, aveRadSolidByVertebra, aveRadSurfByVertebra
 #if TRY_WX == 1
@@ -2686,9 +2705,11 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 	branchAtFrontGlobal = branchAtFront;
 	
 	writeTSV(outputTSVfnBase + ".tsv", lengthUnit, segregatedBackbones, segregatedBranchpoints, segregatedVolumes, segregatedAveRadSurf); // inputs are already segregated by connected components. 
+	// this is an undirected graph representation (cycles can be identified via graph traversal)
 	
 	vector<voxelType> roots(assignRoots(segregatedBranchpoints, segregatedAveRadSurf));
 	writeTSVwithRoots(outputTSVfnBase + "_withRoots.tsv", lengthUnit, roots, segregatedBackbones, segregatedBranchpoints,  segregatedVolumes, segregatedAveRadSurf);
+	// this is a tree-like representation (no cycles are represented here)
 	
 #if TRY_WX == 1
 
@@ -2713,7 +2734,7 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 
 
 	// Per-backbone .dat: name (same as TSV), vertebra index, x, y, z, r_solid, r_surf. One block per backbone, blank line between.
-	// TODO: debug this. the labels for segments don't look right. 
+	// IMPORTANT: this is NOT the x y z coordinates in physical units. These are the x y z indices in voxel space if we imagine the volume as a 3D grid.
 	ofstream voxelOut(outputTSVfnBase + ".dat");
 	for(unsigned int connectedComponent(0); connectedComponent < segregatedBackbones.size(); connectedComponent++){
 		for(unsigned int backboneIndex(0); backboneIndex < segregatedBackbones[connectedComponent].size(); backboneIndex++){
@@ -2734,7 +2755,7 @@ void analyzeVascularStructure(string imageDir, int imStart, int imEnd,
 	voxelOut.close();
 	
 	string niceRuntime(niceTimeSince(analyzeTime));
-	generalStatusUpdate("Output written to outputTSVfnBase = " + outputTSVfnBase + "/...  [Runtime: " + niceRuntime + "]");    
+	generalStatusUpdate("Output written to outputTSVfnBase = " + outputTSVfnBase + "...  [Runtime: " + niceRuntime + "]");    
 	
 }
 
